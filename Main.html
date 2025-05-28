@@ -1,0 +1,1378 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musion</title>
+    <meta http-equiv="Permissions-Policy" content="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share">
+    
+    <script type="text/javascript" id="www-widgetapi-script" src="https://www.youtube.com/s/player/59b252b9/www-widgetapi.vflset/www-widgetapi.js" async=""></script><script src="https://www.youtube.com/iframe_api"></script><script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the player */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light mode background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+            transition: background-color 0.5s ease; /* Smooth transition for theme change */
+        }
+
+        /* Main content wrapper for desktop two-column layout */
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: column; /* Default to column for mobile */
+            gap: 1.5rem;
+            width: 95%;
+            max-width: 1200px;
+            background-color: #ffffff; /* Light mode background */
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            transition: background-color 0.5s ease, box-shadow 0.5s ease; /* Smooth transition for theme change */
+        }
+
+        @media (min-width: 768px) { /* md breakpoint and up */
+            .main-content-wrapper {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+                padding: 2.5rem;
+            }
+        }
+
+        /* Left column for player controls and search */
+        .player-controls-column {
+            flex: 2; /* Takes 2/3 of the space on desktop */
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: center;
+        }
+
+        /* Right column for playlist */
+        .playlist-column {
+            flex: 1; /* Takes 1/3 of the space on desktop */
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background-color: #f8fafc; /* Light mode background */
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.5s ease, box-shadow 0.5s ease; /* Smooth transition for theme change */
+        }
+
+        #player {
+            width: 100%;
+            aspect-ratio: 16 / 9; /* Maintain 16:9 aspect ratio */
+            border-radius: 0.75rem;
+            overflow: hidden;
+            margin-top: 1.5rem;
+            display: none; /* Hide by default, show when playing */
+        }
+
+        /* Player control buttons and integrated progress bar */
+        .controls {
+            display: flex;
+            flex-direction: column; /* Stack thumbnail/title, buttons, and progress bar */
+            align-items: center;
+            gap: 1rem; /* Space between sections */
+            margin-top: 1rem;
+            background-color: #edf2f7; /* Background for the entire controls area */
+            padding: 1rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: background-color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        .track-info-and-buttons {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            width: 100%; /* Take full width of controls area */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            justify-content: center; /* Center content when wrapped */
+        }
+
+        .controls-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-grow: 1; /* Allow buttons to take available space */
+            min-width: 180px; /* Minimum width for the button group */
+        }
+
+        .controls button {
+            background-image: linear-gradient(to right, #6366f1, #4f46e5); /* Gradient */
+            color: white;
+            padding: 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: all 0.3s ease; /* Smoother transition for all properties */
+            box-shadow: 0 6px 15px rgba(79, 70, 229, 0.4); /* Stronger shadow */
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px; /* Slightly larger for better touch target */
+            height: 48px; /* Slightly larger for better touch target */
+            flex-shrink: 0;
+            border: none; /* Ensure no default border */
+            outline: none; /* Remove outline on focus */
+        }
+        .controls button:hover {
+            background-image: linear-gradient(to right, #4f46e5, #4338ca); /* Darker gradient on hover */
+            transform: translateY(-3px); /* More pronounced lift */
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.5); /* Stronger shadow on hover */
+        }
+        .controls button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3); /* Smaller shadow on click */
+            background-image: linear-gradient(to right, #4338ca, #3730a3); /* Even darker on active */
+        }
+        .controls button svg {
+            width: 24px; /* Larger icons */
+            height: 24px;
+        }
+
+        /* Larger Play/Pause Button */
+        #playPauseBtn {
+            width: 64px; /* Larger width */
+            height: 64px; /* Larger height */
+            padding: 1rem; /* Adjust padding for larger size */
+        }
+        #playPauseBtn svg {
+            width: 32px; /* Larger icon */
+            height: 32px; /* Larger icon */
+        }
+
+        /* Playlist item styling */
+        .playlist-item {
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+        }
+        .playlist-item:hover {
+            background-color: #e0e7ff;
+        }
+        .playlist-item.active {
+            background-color: #c7d2fe;
+            font-weight: 600;
+            color: #4f46e5;
+        }
+        .playlist-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 0.25rem;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .playlist-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+        /* Custom scrollbar for Webkit browsers */
+        .playlist-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .playlist-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .playlist-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .playlist-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Search bar styles */
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        .search-container input {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-container input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .search-container button {
+            background-image: linear-gradient(to right, #34d399, #10b981); /* Green gradient */
+            color: white;
+            padding: 0.75rem; /* Adjust padding for icon button */
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px; /* Fixed width for icon button */
+            height: 50px; /* Fixed height for icon button */
+            border: none;
+            outline: none;
+        }
+        .search-container button:hover {
+            background-image: linear-gradient(to right, #10b981, #059669); /* Darker green gradient on hover */
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.5);
+        }
+        .search-container button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+            background-image: linear-gradient(to right, #059669, #047857);
+        }
+        .search-container button svg {
+            width: 24px; /* Larger icons */
+            height: 24px;
+            color: white;
+        }
+
+        /* Current track info display (now integrated into controls) */
+        .current-track-details-integrated {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-grow: 1; /* Allows it to take available space */
+            text-align: left;
+            min-width: 100px; /* Ensure it doesn't shrink too much */
+        }
+        .current-track-details-integrated img {
+            width: 50px; /* Smaller thumbnail for integrated view */
+            height: 50px;
+            border-radius: 0.5rem;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .current-track-details-integrated span {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #4b5563; /* Light mode text */
+            transition: color 0.5s ease; /* Smooth transition for theme change */
+            white-space: nowrap; /* Prevent title from wrapping */
+            overflow: hidden; /* Hide overflow text */
+            text-overflow: ellipsis; /* Add ellipsis for overflow */
+        }
+
+        /* Search Results Display (Container for multiple results) */
+        #searchResultsDisplay {
+            background-color: #e0f2fe; /* Light mode background */
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: background-color 0.5s ease, box-shadow 0.5s ease; /* Smooth transition for theme change */
+        }
+
+        /* Individual search result item */
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid #dbeafe; /* Light mode border */
+            text-align: left;
+            cursor: pointer;
+        }
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        .search-result-item img {
+            width: 60px; /* Slightly larger thumbnail for results */
+            height: 60px;
+            border-radius: 0.5rem;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .search-result-item-info {
+            flex-grow: 1;
+        }
+        .search-result-item-title {
+            font-weight: 600;
+            color: #1e3a8a; /* Light mode text */
+            font-size: 0.95rem;
+            transition: color 0.5s ease; /* Smooth transition for theme change */
+        }
+        .add-to-playlist-btn { /* This class is now used for the icon-only add button */
+            background-image: linear-gradient(to right, #4ade80, #22c55e); /* Green gradient */
+            color: white;
+            padding: 0.4rem; /* Smaller padding for icon button */
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3);
+            white-space: nowrap;
+            font-size: 0.8rem;
+            width: 36px; /* Fixed width for icon button */
+            height: 36px; /* Fixed height for icon button */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            outline: none;
+        }
+        .add-to-playlist-btn:hover {
+            background-image: linear-gradient(to right, #22c55e, #16a34a); /* Darker green gradient on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(34, 197, 94, 0.4);
+        }
+        .add-to-playlist-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+            background-image: linear-gradient(to right, #16a34a, #0b7a3d);
+        }
+        .add-to-playlist-btn svg {
+            width: 20px; /* Icon size */
+            height: 20px; /* Icon size */
+        }
+
+        /* Remove button in playlist */
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0.2rem;
+            border-radius: 50%;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            margin-left: auto;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .remove-btn:hover {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        .remove-btn:active {
+            background-color: #fecaca;
+        }
+
+        /* Cookie Consent Modal */
+        .cookie-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .cookie-modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .cookie-modal-content {
+            background-color: white; /* Light mode background */
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease, background-color 0.5s ease, box-shadow 0.5s ease; /* Smooth transition for theme change */
+        }
+        .cookie-modal-overlay.show .cookie-modal-content {
+            transform: translateY(0);
+        }
+        .cookie-modal-content h3 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #1f2937; /* Light mode text */
+        }
+        .cookie-modal-content p {
+            font-size: 0.95rem;
+            color: #4b5563; /* Light mode text */
+            margin-bottom: 1.5rem;
+        }
+        .cookie-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .cookie-option label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            color: #374151; /* Light mode text */
+            cursor: pointer;
+        }
+        .cookie-option input[type="checkbox"] {
+            transform: scale(1.2);
+            margin-right: 0.5rem;
+            accent-color: #4f46e5;
+        }
+        .cookie-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .cookie-buttons button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .cookie-buttons .accept-all {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .cookie-buttons .accept-all:hover {
+            background-color: #4338ca;
+        }
+        .cookie-buttons .accept-selected {
+            background-color: #e0e7ff;
+            color: #4f46e5;
+            border: 1px solid #c7d2fe;
+        }
+        .cookie-buttons .accept-selected:hover {
+            background-color: #c7d2fe;
+        }
+
+        /* Progress Bar and Time Display within Controls */
+        .progress-bar-area { /* New container for progress bar and time */
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%; /* Take full width of controls container */
+            margin-top: 1rem; /* Space from buttons above */
+        }
+        .progress-container {
+            flex-grow: 1; /* Allow progress bar to take available width */
+            height: 8px;
+            background-color: #cbd5e1; /* Light mode background */
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.5s ease; /* Smooth transition for theme change */
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #4f46e5; /* Light mode progress color */
+            border-radius: 4px;
+            transition: width 0.1s linear, background-color 0.5s ease; /* Smooth transition for theme change */
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        .progress-thumb {
+            width: 16px;
+            height: 16px;
+            background-color: #4f46e5; /* Light mode thumb color */
+            border: 2px solid white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 0%;
+            transform: translate(-50%, -50%);
+            cursor: grab;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease; /* Smooth transition for theme change */
+        }
+        .progress-thumb:active {
+            cursor: grabbing;
+        }
+        .time-display {
+            font-size: 0.875rem;
+            color: #6b7280; /* Light mode text */
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: color 0.5s ease; /* Smooth transition for theme change */
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #000000; /* True black background */
+        }
+        .dark-mode .main-content-wrapper {
+            background-color: #1a1a1a; /* Very dark gray for main container */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        .dark-mode .player-controls-column h1,
+        .dark-mode .playlist-column h2,
+        .dark-mode .current-track-details-integrated span, /* Updated class */
+        .dark-mode .playlist-item span,
+        .dark-mode .time-display,
+        .dark-mode .cookie-modal-content h3,
+        .dark-mode .cookie-modal-content p,
+        .dark-mode .cookie-option label {
+            color: #e0e0e0; /* Lighter text for dark mode */
+        }
+        .dark-mode .playlist-column {
+            background-color: #1a1a1a; /* Very dark gray for playlist background */
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .dark-mode .playlist-item:hover {
+            background-color: #2a2a2a; /* Darker hover for playlist items */
+        }
+        .dark-mode .playlist-item.active {
+            background-color: #4f46e5; /* Keep indigo for active, contrasts well */
+            color: white;
+        }
+        .dark-mode .search-container input {
+            background-color: #3a3a3a;
+            border-color: #3a3a3a;
+            color: #e0e0e0;
+        }
+        .dark-mode .search-container input::placeholder {
+            color: #a0a0a0;
+        }
+        .dark-mode .search-container input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+        }
+        .dark-mode .controls { /* Dark mode for the integrated controls area */
+            background-color: #2a2a2a;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .dark-mode #searchResultsDisplay { /* Updated for multiple results */
+            background-color: #2a2a2a;
+            /* Explicitly setting color for search result items in dark mode */
+            color: #e0e0e0; 
+        }
+        .dark-mode .search-result-item {
+            border-bottom-color: #3a3a3a; /* Dark mode border for results */
+        }
+        .dark-mode .search-result-item-title {
+            /* Explicitly setting color for search result titles in dark mode */
+            color: #e0e0e0; 
+        }
+        .dark-mode .progress-container {
+            background-color: #555555; /* Darker track for progress bar */
+        }
+        .dark-mode .progress-bar {
+            background-color: #4f46e5; /* Keep indigo for progress */
+        }
+        .dark-mode .progress-thumb {
+            background-color: #4f46e5; /* Keep indigo for thumb */
+            border-color: #1a1a1a; /* Darker border for thumb */
+        }
+        .dark-mode .cookie-modal-content {
+            background-color: #1a1a1a;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+        .dark-mode .cookie-buttons .accept-selected {
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+            border-color: #4f46e5;
+        }
+        .dark-mode .cookie-buttons .accept-selected:hover {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .dark-mode .cookie-buttons .accept-all {
+            background-color: #4f46e5;
+        }
+        .dark-mode .cookie-buttons .accept-all:hover {
+            background-color: #4338ca;
+        }
+
+        /* Theme Switch Styles (Fixed Position) */
+        #fixedThemeSwitch {
+            position: fixed;
+            bottom: 1.5rem; /* Adjust as needed */
+            right: 1.5rem; /* Adjust as needed */
+            z-index: 999; /* Ensure it's above other content */
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #4b5563; /* Default text color (though no text now) */
+            transition: color 0.5s ease;
+        }
+
+        .dark-mode #fixedThemeSwitch {
+            color: #e2e8f0; /* Dark mode text color (though no text now) */
+        }
+
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4f46e5; /* Indigo for dark mode */
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #4f46e5;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="main-content-wrapper">
+        <div class="player-controls-column">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Musion</h1>
+
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Enter song name or YouTube video URL/ID" class="flex-grow">
+                <button id="searchBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="searchResultsDisplay" style="display: none;" class="rounded-lg">
+                <div id="searchResultList" class="flex flex-col gap-2">
+                    </div>
+            </div>
+
+            <div class="controls">
+                <div class="track-info-and-buttons">
+                    <div class="current-track-details-integrated">
+                        <img id="currentTrackThumbnail" src="https://placehold.co/50x50/cccccc/333333?text=No+Track" alt="No track thumbnail">
+                        <span id="currentTrackTitle">No track playing</span>
+                    </div>
+                    
+                    <div class="controls-row">
+                        <button id="prevBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                        <button id="playPauseBtn">
+                            <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                            </svg>
+                            <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                        <button id="nextBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="progress-bar-area hidden" id="progressBarArea">
+                    <span id="currentTime" class="time-display">0:00</span>
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar" id="progressBar" style="width: 0%;"></div>
+                        <div class="progress-thumb" id="progressThumb" style="left: 0%;"></div>
+                    </div>
+                    <span id="totalTime" class="time-display">0:00</span>
+                </div>
+            </div>
+
+            <iframe id="player" style="display: none;" frameborder="0" allowfullscreen="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" title="YouTube video player" width="560" height="315" src="https://www.youtube.com/embed/?playsinline=1&amp;autoplay=0&amp;controls=0&amp;rel=0&amp;modestbranding=1&amp;enablejsapi=1&amp;origin=http%3A%2F%2Flocalhost%3A6060&amp;widgetid=1&amp;forigin=http%3A%2F%2Flocalhost%3A6060%2F&amp;aoriginsup=1&amp;vf=1"></iframe>
+        </div>
+
+        <div class="playlist-column">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-2xl font-semibold text-gray-800">Playlist</h2>
+            </div>
+            <div id="playlist" class="playlist-scroll flex flex-col gap-2"><p class="text-gray-500 text-sm">Add songs using the search bar above!</p></div>
+        </div>
+    </div>
+
+    <div id="cookieConsentModal" class="cookie-modal-overlay">
+        <div class="cookie-modal-content">
+            <h3>Cookie Preferences</h3>
+            <p>This website uses cookies to enhance your experience. Please choose which types of cookies you'd like to accept.</p>
+            <div class="cookie-options">
+                <div class="cookie-option">
+                    <input type="checkbox" id="necessaryCookies" checked="" disabled="">
+                    <label for="necessaryCookies">Necessary Cookies (Required)</label>
+                </div>
+                <div class="cookie-option">
+                    <input type="checkbox" id="analyticsCookies">
+                    <label for="analyticsCookies">Analytics Cookies</label>
+                </div>
+                <div class="cookie-option">
+                    <input type="checkbox" id="marketingCookies">
+                    <label for="marketingCookies">Marketing Cookies</label>
+                </div>
+            </div>
+            <div class="cookie-buttons">
+                <button id="acceptSelectedCookiesBtn" class="accept-selected">Accept Selection</button>
+                <button id="acceptAllCookiesBtn" class="accept-all">Accept All</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="fixedThemeSwitch">
+        <label class="theme-switch">
+            <input type="checkbox" id="themeSwitch">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <script>
+        // 1. Load the YouTube IFrame Player API asynchronously.
+        var tag = document.createElement('script');
+        // CORRECT YouTube IFrame Player API URL
+        tag.src = "https://www.youtube.com/iframe_api"; 
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        // 2. Global variables for the player and playlist
+        var player;
+        var currentTrackIndex = 0;
+        var playlist = []; // Initialize playlist as empty
+        let progressBarInterval; // To store the interval for updating the progress bar
+        let isDragging = false; // Flag to track if the progress thumb is being dragged
+
+        // === IMPORTANT: REPLACE 'YOUR_YOUTUBE_API_KEY' WITH YOUR ACTUAL API KEY ===
+        const YOUTUBE_API_KEY = 'AIzaSyD7ooM3f78PbIMl_Fr_IDTwRdbmTQUV0uk'; 
+        // =========================================================================
+
+        // Get references to DOM elements
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        // Removed currentTrackTitle and currentTrackThumbnail as separate elements
+        const currentTrackTitle = document.getElementById('currentTrackTitle'); // Now inside controls
+        const currentTrackThumbnail = document.getElementById('currentTrackThumbnail'); // Now inside controls
+        const playlistContainer = document.getElementById('playlist');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const playerDiv = document.getElementById('player'); // Reference to the player container div
+
+        // Search Results elements
+        const searchResultsDisplay = document.getElementById('searchResultsDisplay'); // Overall search results container
+        const searchResultList = document.getElementById('searchResultList'); // Container for individual search result items
+
+        // Cookie Consent elements
+        const cookieConsentModal = document.getElementById('cookieConsentModal');
+        const necessaryCookiesCheckbox = document.getElementById('necessaryCookies');
+        const analyticsCookiesCheckbox = document.getElementById('analyticsCookies');
+        const marketingCookiesCheckbox = document.getElementById('marketingCookies');
+        const acceptSelectedCookiesBtn = document.getElementById('acceptSelectedCookiesBtn');
+        const acceptAllCookiesBtn = document.getElementById('acceptAllCookiesBtn');
+
+        // Progress Bar elements (now directly referenced, no longer from bottomPlayerBar)
+        const progressBarArea = document.getElementById('progressBarArea'); // New: reference to the progress bar container
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressThumb = document.getElementById('progressThumb'); // Reference to the thumb
+        const currentTimeSpan = document.getElementById('currentTime');
+        const totalTimeSpan = document.getElementById('totalTime');
+
+        // Theme Switch elements
+        const themeSwitch = document.getElementById('themeSwitch');
+
+
+        // 3. This function creates an <iframe> (and YouTube player) after the API code downloads.
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '315',
+                width: '560',
+                videoId: '', // No initial video loaded
+                playerVars: {
+                    'playsinline': 1,
+                    'autoplay': 0, // Autoplay is explicitly turned off here
+                    'controls': 0,
+                    'rel': 0,
+                    'modestbranding': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        // 4. The API will call this function when the video player is ready.
+        function onPlayerReady(event) {
+            console.log('YouTube Player is ready.');
+            updateTrackInfo();
+            renderPlaylist();
+            highlightCurrentTrack();
+        }
+
+        // Helper function to format time
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        // Function to update the progress bar and time display
+        function updateProgressBar() {
+            if (player && typeof player.getCurrentTime === 'function' && typeof player.getDuration === 'function' && !isDragging) {
+                const currentTime = player.getCurrentTime();
+                const totalTime = player.getDuration();
+                const progress = (currentTime / totalTime) * 100;
+
+                progressBar.style.width = `${progress}%`;
+                progressThumb.style.left = `${progress}%`; // Position the thumb
+                currentTimeSpan.textContent = formatTime(currentTime);
+                totalTimeSpan.textContent = formatTime(totalTime);
+            }
+        }
+
+        // 5. The API calls this function when the player's state changes.
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                // Update play/pause button icon
+                document.getElementById('playIcon').classList.add('hidden');
+                document.getElementById('pauseIcon').classList.remove('hidden');
+
+                playerDiv.style.display = 'block'; // Show player when it starts playing
+                progressBarArea.classList.remove('hidden'); // Show progress bar area
+                // Start updating progress bar
+                clearInterval(progressBarInterval); // Clear any existing interval
+                progressBarInterval = setInterval(updateProgressBar, 1000); // Update every second
+            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.BUFFERING || event.data === YT.PlayerState.CUED) {
+                // Update play/pause button icon
+                document.getElementById('playIcon').classList.remove('hidden');
+                document.getElementById('pauseIcon').classList.add('hidden');
+                clearInterval(progressBarInterval); // Stop updating progress bar
+            } else if (event.data === YT.PlayerState.ENDED) {
+                clearInterval(progressBarInterval); // Stop updating progress bar
+                playNextTrack(); // Play the next track when the current one ends
+            }
+            // If player is not playing, hide progress bar area
+            if (event.data !== YT.PlayerState.PLAYING) {
+                progressBarArea.classList.add('hidden');
+            }
+        }
+
+        // Function to play or pause the current video
+        function togglePlayPause() {
+            if (player && typeof player.getPlayerState === 'function') { // Check if player and its method exist
+                if (playlist.length === 0) {
+                    console.log("Playlist is empty. Add a song first.");
+                    return;
+                }
+                if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+                    player.pauseVideo();
+                } else {
+                    player.playVideo();
+                }
+            }
+        }
+
+        // Function to play the next track
+        function playNextTrack() {
+            if (playlist.length === 0) {
+                if (player && typeof player.stopVideo === 'function') {
+                    player.stopVideo();
+                }
+                playerDiv.style.display = 'none'; // Hide player if no more songs
+                progressBarArea.classList.add('hidden'); // Hide progress bar area
+                updateTrackInfo();
+                highlightCurrentTrack();
+                return;
+            }
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            if (player && typeof player.loadVideoById === 'function') {
+                player.loadVideoById(playlist[currentTrackIndex].id);
+            }
+            updateTrackInfo();
+            highlightCurrentTrack();
+        }
+
+        // Function to play the previous track
+        function playPrevTrack() {
+            if (playlist.length === 0) {
+                if (player && typeof player.stopVideo === 'function') {
+                    player.stopVideo();
+                }
+                playerDiv.style.display = 'none'; // Hide player if no more songs
+                progressBarArea.classList.add('hidden'); // Hide progress bar area
+                updateTrackInfo();
+                highlightCurrentTrack();
+                return;
+            }
+            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+            if (player && typeof player.loadVideoById === 'function') {
+                player.loadVideoById(playlist[currentTrackIndex].id);
+            }
+            updateTrackInfo();
+            highlightCurrentTrack();
+        }
+
+        // Function to update the displayed track title and thumbnail
+        function updateTrackInfo() {
+            if (playlist.length > 0 && currentTrackIndex >= 0 && currentTrackIndex < playlist.length) {
+                const currentTrack = playlist[currentTrackIndex];
+                // Update the integrated thumbnail and title
+                currentTrackTitle.textContent = currentTrack.title;
+                currentTrackThumbnail.src = currentTrack.thumbnail || `https://placehold.co/50x50/cccccc/333333?text=No+Img`;
+                currentTrackThumbnail.alt = `${currentTrack.title} thumbnail`;
+
+                // Update the progress bar and time display within the controls
+                currentTimeSpan.textContent = formatTime(player.getCurrentTime ? player.getCurrentTime() : 0);
+                totalTimeSpan.textContent = formatTime(player.getDuration ? player.getDuration() : 0);
+            } else {
+                // Reset displays when no track is playing
+                currentTrackTitle.textContent = 'No track playing';
+                currentTrackThumbnail.src = 'https://placehold.co/50x50/cccccc/333333?text=No+Track';
+                currentTrackThumbnail.alt = 'No track thumbnail';
+
+                if (player && typeof player.stopVideo === 'function') {
+                    player.stopVideo();
+                }
+                playerDiv.style.display = 'none';
+                progressBarArea.classList.add('hidden'); // Hide progress bar area
+                clearInterval(progressBarInterval); // Stop progress bar updates
+                progressBar.style.width = '0%';
+                progressThumb.style.left = '0%'; // Reset thumb position
+                currentTimeSpan.textContent = '0:00';
+                totalTimeSpan.textContent = '0:00';
+            }
+        }
+
+        // Function to render the playlist dynamically
+        function renderPlaylist() {
+            playlistContainer.innerHTML = ''; // Clear existing playlist
+            if (playlist.length === 0) {
+                playlistContainer.innerHTML = '<p class="text-gray-500 text-sm">Add songs using the search bar above!</p>';
+                return;
+            }
+            playlist.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = 'playlist-item flex items-center gap-3 p-2 rounded-lg';
+                item.setAttribute('data-index', index);
+                item.innerHTML = `
+                    <img src="${track.thumbnail || `https://placehold.co/40x40/cccccc/333333?text=Img`}" alt="${track.title} thumbnail" class="w-10 h-10 rounded-md object-cover" onerror="this.onerror=null;this.src='https://placehold.co/40x40/cccccc/333333?text=Img';">
+                    <span class="text-gray-700 text-sm font-medium flex-grow cursor-pointer" data-action="play">${track.title}</span>
+                    <button class="remove-btn" data-index="${index}" data-action="remove">×</button>
+                `;
+                item.querySelector('[data-action="play"]').addEventListener('click', (event) => {
+                    const clickedIndex = parseInt(item.getAttribute('data-index'));
+                    currentTrackIndex = clickedIndex;
+                    if (player && typeof player.loadVideoById === 'function') {
+                        player.loadVideoById(playlist[currentTrackIndex].id);
+                    }
+                    updateTrackInfo();
+                    highlightCurrentTrack();
+                    if (player && typeof player.playVideo === 'function') {
+                        player.playVideo();
+                    }
+                });
+                item.querySelector('[data-action="remove"]').addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    const indexToRemove = parseInt(event.target.getAttribute('data-index'));
+                    removeTrack(indexToRemove);
+                });
+                playlistContainer.appendChild(item);
+            });
+            highlightCurrentTrack();
+        }
+
+        // Function to highlight the currently playing track in the playlist
+        function highlightCurrentTrack() {
+            document.querySelectorAll('.playlist-item').forEach((item, index) => {
+                if (index === currentTrackIndex && playlist.length > 0) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        // Function to extract YouTube video ID from a URL
+        function getYouTubeVideoId(url) {
+            let videoId = '';
+            const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            const match = url.match(regex);
+            if (match && match[1]) {
+                videoId = match[1];
+            } else if (url.length === 11) {
+                videoId = url;
+            }
+            return videoId;
+        }
+
+        // Function to display search results
+        function displaySearchResults(results) {
+            searchResultList.innerHTML = ''; // Clear previous results
+            if (results.length === 0) {
+                searchResultList.innerHTML = '<p class="text-gray-500 text-sm p-4">No results found.</p>';
+                searchResultsDisplay.style.display = 'block'; // Show search results container
+                return;
+            }
+
+            results.slice(0, 4).forEach(video => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                item.innerHTML = `
+                    <img src="${video.thumbnail || `https://placehold.co/60x60/cccccc/333333?text=Img`}" alt="${video.title} thumbnail" class="w-16 h-16 rounded-md object-cover" onerror="this.onerror=null;this.src='https://placehold.co/60x60/cccccc/333333?text=Img';">
+                    <div class="search-result-item-info">
+                        <p class="search-result-item-title">${video.title}</p>
+                    </div>
+                    <button class="add-to-playlist-btn" 
+                            data-video-id="${video.id}" 
+                            data-title="${video.title}" 
+                            data-thumbnail="${video.thumbnail}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                        </svg>
+                    </button>
+                `;
+                item.querySelector('.add-to-playlist-btn').addEventListener('click', (event) => {
+                    const btn = event.target.closest('button'); // Use closest to get the button even if icon is clicked
+                    const videoId = btn.getAttribute('data-video-id');
+                    const videoTitle = btn.getAttribute('data-title');
+                    const videoThumbnail = btn.getAttribute('data-thumbnail');
+                    addSongToPlaylist({ id: videoId, title: videoTitle, thumbnail: videoThumbnail });
+                    // This line ensures the search results disappear after adding a song
+                    searchResultsDisplay.style.display = 'none'; 
+                });
+                searchResultList.appendChild(item);
+            });
+            searchResultsDisplay.style.display = 'block'; // Show search results container
+        }
+
+        // Function to handle search and display result (now with real API call)
+        async function handleSearch() {
+            const input = searchInput.value.trim();
+            if (!input) {
+                searchResultsDisplay.style.display = 'none'; // Hide search results if input is empty
+                return;
+            }
+
+            const videoId = getYouTubeVideoId(input);
+
+            if (videoId) {
+                // If it's a direct YouTube URL/ID, fetch and display single result using oEmbed
+                let videoTitle = 'Unknown Title';
+                let videoThumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+                try {
+                    const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`; 
+                    const response = await fetch(oEmbedUrl);
+                    if (response.ok) {
+                        const data = await response.json();
+                        videoTitle = data.title || 'YouTube Video';
+                        videoThumbnail = data.thumbnail_url || videoThumbnail;
+                    } else {
+                        console.warn(`Could not fetch oEmbed data for video ID: ${videoId}. Status: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error("Error fetching video metadata:", error);
+                }
+                
+                // Display single result format for direct URL/ID input
+                displaySearchResults([{ id: videoId, title: videoTitle, thumbnail: videoThumbnail }]);
+
+            } else {
+                // If it's a song name, perform a real YouTube Data API search
+                console.log("Performing real YouTube search for:", input);
+                try {
+                    const searchApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(input)}&type=video&maxResults=4&key=${YOUTUBE_API_KEY}`;
+                    const response = await fetch(searchApiUrl);
+                    if (!response.ok) {
+                        throw new Error(`YouTube API error: ${response.status} ${response.statusText}`);
+                    }
+                    const data = await response.json();
+                    
+                    const results = data.items.map(item => ({
+                        id: item.id.videoId,
+                        title: item.snippet.title,
+                        thumbnail: item.snippet.thumbnails.high.url
+                    }));
+                    displaySearchResults(results);
+
+                } catch (error) {
+                    console.error("Error fetching YouTube search results:", error);
+                    searchResultList.innerHTML = `<p class="text-red-500 text-sm p-4">Error fetching search results. Check your API key and console for details.</p>`;
+                    searchResultsDisplay.style.display = 'block'; // Show error message
+                }
+            }
+        }
+
+        // Function to add a song to the playlist from search results
+        function addSongToPlaylist(newTrack) {
+            // Check if the video already exists in the playlist
+            const exists = playlist.some(track => track.id === newTrack.id);
+            if (!exists) {
+                playlist.push(newTrack);
+                renderPlaylist();
+
+                // If this is the first song added, or if no song is currently playing, load it
+                if (playlist.length === 1 || (player && typeof player.getPlayerState === 'function' && (player.getPlayerState() === YT.PlayerState.ENDED || player.getPlayerState() === YT.PlayerState.CUED || player.getPlayerState() === -1))) {
+                    currentTrackIndex = playlist.length - 1; // Play the newly added song
+                    if (player && typeof player.loadVideoById === 'function') {
+                        player.loadVideoById(newTrack.id);
+                    }
+                    updateTrackInfo();
+                    highlightCurrentTrack();
+                    if (player && typeof player.playVideo === 'function') {
+                        player.playVideo();
+                    }
+                }
+                searchInput.value = ''; // Clear search input
+                searchResultsDisplay.style.display = 'none'; // Hide search result after adding
+            } else {
+                alert("This song is already in your playlist!");
+            }
+        }
+
+        // Function to remove a track from the playlist
+        function removeTrack(indexToRemove) {
+            if (indexToRemove < 0 || indexToRemove >= playlist.length) {
+                console.error("Invalid index for removal:", indexToRemove);
+                return;
+            }
+
+            const wasPlaying = (currentTrackIndex === indexToRemove);
+
+            playlist.splice(indexToRemove, 1); // Remove the track
+
+            // Adjust currentTrackIndex if necessary
+            if (playlist.length === 0) {
+                currentTrackIndex = 0; // Reset index
+                if (player && typeof player.stopVideo === 'function') {
+                    player.stopVideo();
+                }
+                playerDiv.style.display = 'none';
+                progressBarArea.classList.add('hidden'); // Hide progress bar area
+                clearInterval(progressBarInterval); // Stop progress bar updates
+                progressBar.style.width = '0%';
+                progressThumb.style.left = '0%'; // Reset thumb position
+                currentTimeSpan.textContent = '0:00';
+                totalTimeSpan.textContent = '0:00';
+            } else if (wasPlaying) {
+                // If the playing song was removed, play the next one or the first if it was the last song
+                currentTrackIndex = Math.min(indexToRemove, playlist.length - 1); // Stay at same index or move to new last song
+                if (playlist.length > 0) { // Only load/play if there are songs left
+                    if (player && typeof player.loadVideoById === 'function') {
+                        player.loadVideoById(playlist[currentTrackIndex].id);
+                    }
+                    if (player && typeof player.playVideo === 'function') {
+                        player.playVideo(); // Start playing new song
+                    }
+                } else { // If playlist is empty after removal
+                    if (player && typeof player.stopVideo === 'function') {
+                        player.stopVideo();
+                    }
+                    playerDiv.style.display = 'none';
+                    progressBarArea.classList.add('hidden'); // Hide progress bar area
+                }
+            } else if (indexToRemove < currentTrackIndex) {
+                // If a song before the current one was removed, adjust the currentTrackIndex
+                currentTrackIndex--;
+            }
+
+            updateTrackInfo();
+            renderPlaylist(); // Re-render the entire playlist to update indices and display
+            highlightCurrentTrack();
+        }
+        
+        // --- Progress Bar Seeking Logic ---
+        function seekTo(event) {
+            if (!player || typeof player.getDuration !== 'function' || playlist.length === 0) {
+                return;
+            }
+
+            const progressBarRect = progressContainer.getBoundingClientRect();
+            let clientX = event.clientX;
+
+            // Handle touch events
+            if (event.touches && event.touches.length > 0) {
+                clientX = event.touches[0].clientX;
+            }
+
+            let newPosition = (clientX - progressBarRect.left) / progressBarRect.width;
+            newPosition = Math.max(0, Math.min(1, newPosition)); // Clamp between 0 and 1
+
+            const seekTime = player.getDuration() * newPosition;
+            player.seekTo(seekTime, true);
+
+            // Immediately update visual for smooth scrubbing
+            progressBar.style.width = `${newPosition * 100}%`;
+            progressThumb.style.left = `${newPosition * 100}%`;
+            currentTimeSpan.textContent = formatTime(seekTime);
+        }
+
+        function onMouseDown(event) {
+            if (player && typeof player.getDuration === 'function' && playlist.length > 0) {
+                isDragging = true;
+                seekTo(event); // Seek immediately on click/down
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                document.addEventListener('touchmove', onMouseMove, { passive: false }); // For mobile dragging
+                document.addEventListener('touchend', onMouseUp);
+            }
+        }
+
+        function onMouseMove(event) {
+            if (isDragging) {
+                event.preventDefault(); // Prevent text selection or scrolling during drag
+                seekTo(event);
+            }
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            document.removeEventListener('touchmove', onMouseMove);
+            document.removeEventListener('touchend', onMouseUp);
+        }
+        // --- End Progress Bar Seeking Logic ---
+
+
+        // Cookie Consent Logic
+        function checkCookieConsent() {
+            const preferences = JSON.parse(localStorage.getItem('cookiePreferences'));
+            if (!preferences || !preferences.necessary) {
+                // If no preferences or necessary cookies not accepted, show modal
+                cookieConsentModal.classList.add('show');
+                necessaryCookiesCheckbox.checked = true; // Necessary is always checked and disabled
+                necessaryCookiesCheckbox.disabled = true;
+
+                // Set analytics and marketing based on previous selection if available
+                if (preferences) {
+                    analyticsCookiesCheckbox.checked = preferences.analytics || false;
+                    marketingCookiesCheckbox.checked = preferences.marketing || false;
+                }
+            } else {
+                // If necessary cookies are accepted, hide modal
+                cookieConsentModal.classList.remove('show');
+            }
+        }
+
+        function saveCookiePreferences(acceptAll = false) {
+            const preferences = {
+                necessary: true, // Always true
+                analytics: acceptAll ? true : analyticsCookiesCheckbox.checked,
+                marketing: acceptAll ? true : marketingCookiesCheckbox.checked
+            };
+            localStorage.setItem('cookiePreferences', JSON.stringify(preferences));
+            cookieConsentModal.classList.remove('show'); // Hide modal after saving
+            console.log('Cookie preferences saved:', preferences);
+        }
+
+        // Theme Logic
+        function applyTheme(isDarkMode) {
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                themeSwitch.checked = true;
+            } else {
+                document.body.classList.remove('dark-mode');
+                themeSwitch.checked = false;
+            }
+        }
+
+        function loadThemePreference() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                applyTheme(true);
+            } else {
+                applyTheme(false); // Default to light mode if no preference or 'light'
+            }
+        }
+
+        function toggleTheme() {
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            applyTheme(!isDarkMode);
+            localStorage.setItem('theme', !isDarkMode ? 'dark' : 'light');
+        }
+
+        // Add event listeners to control buttons
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        prevBtn.addEventListener('click', playPrevTrack);
+        nextBtn.addEventListener('click', playNextTrack);
+        searchBtn.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                handleSearch();
+            }
+        });
+
+        // Add event listener for progress bar interaction (click and drag)
+        progressContainer.addEventListener('mousedown', onMouseDown);
+        progressContainer.addEventListener('touchstart', onMouseDown, { passive: false }); // For mobile touch events
+
+        // Add event listeners to cookie consent buttons
+        acceptSelectedCookiesBtn.addEventListener('click', () => saveCookiePreferences(false));
+        acceptAllCookiesBtn.addEventListener('click', () => saveCookiePreferences(true));
+
+        // Add event listener for theme switch
+        themeSwitch.addEventListener('change', toggleTheme);
+
+
+        // Call checkCookieConsent and loadThemePreference when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPlaylist();
+            updateTrackInfo();
+            checkCookieConsent(); // This will trigger the modal to show if no consent
+            loadThemePreference(); // Load theme preference on page load
+        });
+    </script>
+
+
+
+</body></html>
